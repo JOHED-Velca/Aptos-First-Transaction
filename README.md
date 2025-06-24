@@ -1,1 +1,1 @@
-# Aptos First Transaction tutorial
+# Aptos Projects and Tutorials
