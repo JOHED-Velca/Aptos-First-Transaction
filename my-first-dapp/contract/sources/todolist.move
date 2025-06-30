@@ -6,6 +6,11 @@ module todolist_addr::todolist {
     // use aptos_std::table::Table;
     use aptos_framework::account;
 
+    // Errors
+    const ENOT_INITIALIZED: u64 = 1;
+    const ETASK_DOESNT_EXIST: u64 = 2;
+    const ETASK_IS_COMPLETED: u64 = 3;
+
     struct TodoList has key {
         tasks: Table<u64, Task>,
         set_task_event: event::EventHandle<Task>,
@@ -52,6 +57,18 @@ module todolist_addr::todolist {
         &mut borrow_global_mut<TodoList>(signer_address).set_task_event,
         new_task,
         );
+
+        // gets the signer address
+        let signer_address = signer::address_of(account);
+        
+        // assert signer has created a list
+        assert!(exists<TodoList>(signer_address), 1);
+
+        // gets the signer address
+        let signer_address = signer::address_of(account);
+        
+        // assert signer has created a list
+        assert!(exists<TodoList>(signer_address), ENOT_INITIALIZED);
     }
 
     public entry fun complete_task(account: &signer, task_id: u64) acquires TodoList {
@@ -61,6 +78,35 @@ module todolist_addr::todolist {
         let todo_list = borrow_global_mut<TodoList>(signer_address);
         // gets the task matches the task_id
         let task_record = table::borrow_mut(&mut todo_list.tasks, task_id);
+        // update task as completed
+        task_record.completed = true;
+
+        // gets the signer address
+        let signer_address = signer::address_of(account);
+        // assert signer has created a list
+        assert!(exists<TodoList>(signer_address), 1);
+        // gets the TodoList resource
+        let todo_list = borrow_global_mut<TodoList>(signer_address);
+        // assert task exists
+        assert!(table::contains(&todo_list.tasks, task_id), 2);
+        // gets the task matched the task_id
+        let task_record = table::borrow_mut(&mut todo_list.tasks, task_id);
+        // assert task is not completed
+        assert!(task_record.completed == false, 3);
+        // update task as completed
+        task_record.completed = true;
+
+        // gets the signer address
+        let signer_address = signer::address_of(account);
+        assert!(exists<TodoList>(signer_address), ENOT_INITIALIZED);
+        // gets the TodoList resource
+        let todo_list = borrow_global_mut<TodoList>(signer_address);
+        // assert task exists
+        assert!(table::contains(&todo_list.tasks, task_id), ETASK_DOESNT_EXIST);
+        // gets the task matched the task_id
+        let task_record = table::borrow_mut(&mut todo_list.tasks, task_id);
+        // assert task is not completed
+        assert!(task_record.completed == false, ETASK_IS_COMPLETED);
         // update task as completed
         task_record.completed = true;
     }
