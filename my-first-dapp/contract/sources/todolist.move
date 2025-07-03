@@ -3,9 +3,8 @@ module todolist_addr::todolist {
     use aptos_std::table::{Self, Table};
     use aptos_framework::event;
     use aptos_framework::account;
-    use std::string::{Self};
-    #[test_only]
-    use std::string::{String};
+    // #[test_only]
+    use std::string::{Self, String};
 
     // Errors
     const ENOT_INITIALIZED: u64 = 1;
