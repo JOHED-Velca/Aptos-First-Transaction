@@ -6,9 +6,6 @@ authors = []
 [addresses]
 todolist_addr='_'
 
-[dev-addresses]
-todolist_addr='0x123'
-
 [dependencies]
 AptosFramework = { git = "https://github.com/aptos-labs/aptos-framework.git", rev = "mainnet", subdir = "aptos-framework" }
 
