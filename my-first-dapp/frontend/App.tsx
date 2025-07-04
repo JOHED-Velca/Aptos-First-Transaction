@@ -4,6 +4,7 @@ import { useWallet } from "@aptos-labs/wallet-adapter-react";
 import { useEffect, useState } from "react";
 import { MODULE_ADDRESS } from "./constants";
 import { aptosClient } from "./utils/aptosClient";
+import { Button } from "./components/ui/button";
  
 function App() {
   const { account } = useWallet();
@@ -17,7 +18,7 @@ function App() {
   const fetchList = async () => {
     if (!account) return [];
     const moduleAddress = MODULE_ADDRESS;
-    
+
     try {
       const todoListResource = await aptosClient().getAccountResource(
         {
@@ -36,7 +37,11 @@ function App() {
       <TopBanner />
       <Header />
       <div className="flex items-center justify-center flex-col">
-        <div>My app goes here</div>
+        {!accountHasList && (
+          <div className="flex items-center justify-center flex-col">
+            <Button>Add new list</Button>
+          </div>
+        )}
       </div>
     </>
   );
