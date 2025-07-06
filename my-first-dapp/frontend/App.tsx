@@ -15,6 +15,7 @@ type Task = {
 };
  
 function App() {
+  const [newTask, setNewTask] = useState<string>("");
   const [tasks, setTasks] = useState<Task[]>([]);
   const { account, signAndSubmitTransaction } = useWallet();
 
@@ -92,6 +93,91 @@ function App() {
     }
   };
 
+  // Function to add a new task to the todo list
+  const onTaskAdded = async () => {
+    // check for connected account
+    if (!account) return;
+    setTransactionInProgress(true);
+    
+    const transaction: InputTransactionData = {
+      data: {
+        function: `${moduleAddress}::todolist::create_task`,
+        functionArguments: [newTask],
+      },
+    };
+ 
+    // hold the latest task.task_id from our local state
+    const latestId = tasks.length > 0 ? parseInt(tasks[tasks.length - 1].task_id) + 1 : 1;
+ 
+    // build a newTaskToPush object into our local state
+    const newTaskToPush: Task = {
+      address: account.address.toString(),
+      completed: false,
+      content: newTask,
+      task_id: latestId + "",
+    };
+ 
+    try {
+      // sign and submit transaction to chain
+      const response = await signAndSubmitTransaction(transaction);
+      // wait for transaction
+      await aptosClient().waitForTransaction({ transactionHash: response.hash });
+ 
+      // Create a new array based on current state:
+      let newTasks = [...tasks];
+ 
+      // Add item to the tasks array
+      newTasks.push(newTaskToPush);
+      // Set state
+      setTasks(newTasks);
+      // clear input text
+      setNewTask("");
+    } catch (error: any) {
+      console.log("error", error);
+    } finally {
+      setTransactionInProgress(false);
+    }
+  };
+
+
+  // Function to handle checkbox change event
+  const onCheckboxChange = async (event: React.ChangeEvent<HTMLInputElement>, taskId: string) => {
+    if (!account) return;
+    if (!event.target.checked) return;
+    setTransactionInProgress(true);
+    const transaction: InputTransactionData = {
+      data: {
+        function: `${moduleAddress}::todolist::complete_task`,
+        functionArguments: [taskId],
+      },
+    };
+ 
+    try {
+      // sign and submit transaction to chain
+      const response = await signAndSubmitTransaction(transaction);
+      // wait for transaction
+      await aptosClient().waitForTransaction({ transactionHash: response.hash });
+ 
+      setTasks((prevState) => {
+        const newState = prevState.map((obj) => {
+          // if task_id equals the checked taskId, update completed property
+          if (obj.task_id === taskId) {
+            return { ...obj, completed: true };
+          }
+ 
+          // otherwise return object as is
+          return obj;
+        });
+ 
+        return newState;
+      });
+    } catch (error: any) {
+      console.log("error", error);
+    } finally {
+      setTransactionInProgress(false);
+    }
+  };
+
   return (
     <>
       <TopBanner />
@@ -107,8 +193,12 @@ function App() {
         ) : (
           <div className="flex flex-col gap-10">
             <div className="flex flex-row gap-10">
-              <Input/>
-              <Button>Add new task</Button>
+              <Input
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+                placeholder="Enter new task"
+              />
+              <Button onClick={onTaskAdded}>Add new task</Button>
             </div>
             {tasks &&
               tasks.length > 0 &&
@@ -116,7 +206,10 @@ function App() {
                 <div key={task.task_id} className="flex justify-between flex-row">
                   <p className="text-xl font-bold">{task.content}</p>
                   <div>
-                    <Input type="checkbox"/>
+                    <Input
+                      type="checkbox"
+                      onChange={(event) => onCheckboxChange(event, task.task_id)}
+                    />
                   </div>
                 </div>
               ))}
