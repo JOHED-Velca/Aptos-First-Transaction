@@ -5,8 +5,17 @@ import { useEffect, useState } from "react";
 import { MODULE_ADDRESS } from "./constants";
 import { aptosClient } from "./utils/aptosClient";
 import { Button } from "./components/ui/button";
+import { Input } from "./components/ui/input";
+
+type Task = {
+  address: string;
+  completed: boolean;
+  content: string;
+  task_id: string;
+};
  
 function App() {
+  const [tasks, setTasks] = useState<Task[]>([]);
   const { account, signAndSubmitTransaction } = useWallet();
 
   useEffect(() => {
@@ -33,6 +42,27 @@ function App() {
         }
       );
       setAccountHasList(true);
+
+      // tasks table handle
+      const tableHandle = (todoListResource as any).tasks.handle;
+      // tasks table counter
+      const taskCounter = (todoListResource as any).task_counter;
+  
+      let tasks = []; 
+      let counter = 1;
+      while (counter <= taskCounter) { // Loop through the tasks based on the counter
+        const tableItem = { 
+          key_type: "u64",
+          value_type: `${moduleAddress}::todolist::Task`,
+          key: `${counter}`,
+        };
+        // Fetch each task from the table using the handle and item key
+        const task = await aptosClient().getTableItem<Task>({handle:tableHandle, data:tableItem});
+        tasks.push(task); // Add the fetched task to the tasks array
+        counter++;
+      }
+      // set tasks in local state
+      setTasks(tasks);
     } catch (e: any) { // If it does not exist, an error will be thrown
       setAccountHasList(false);
     }
@@ -67,14 +97,29 @@ function App() {
       <TopBanner />
       <Header />
       <div className="flex items-center justify-center flex-col">
-        {!accountHasList && (
-          <div className="flex items-center justify-center flex-col">
+        {!accountHasList ? (
             <Button
               onClick={addNewList}
               disabled={transactionInProgress}
             >
               Add new list
             </Button>
+        ) : (
+          <div className="flex flex-col gap-10">
+            <div className="flex flex-row gap-10">
+              <Input/>
+              <Button>Add new task</Button>
+            </div>
+            {tasks &&
+              tasks.length > 0 &&
+              tasks.map((task) => (
+                <div key={task.task_id} className="flex justify-between flex-row">
+                  <p className="text-xl font-bold">{task.content}</p>
+                  <div>
+                    <Input type="checkbox"/>
+                  </div>
+                </div>
+              ))}
           </div>
         )}
       </div>
